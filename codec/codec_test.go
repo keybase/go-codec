@@ -1285,6 +1285,12 @@ type U1 struct {
 	unknownFields map[string]interface{}
 }
 
+func (u1 *U1) CodecOnUnknownField(fieldName string) {
+	fmt.Printf("Unknown field: %s\n", fieldName)
+}
+
+var _ UnknownFieldsHandler = (*U1)(nil)
+
 type U2 struct {
 	U1
 
