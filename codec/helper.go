@@ -349,6 +349,21 @@ func (ufs *UnknownFieldSet) add(name string, encodedVal []byte) {
 	ufs.fields[name] = encodedValCopy
 }
 
+func (ufs UnknownFieldSet) DeepCopy() UnknownFieldSet {
+	var fieldsCopy map[string][]byte
+	if ufs.fields != nil {
+		fieldsCopy = make(map[string][]byte, len(ufs.fields))
+		for k, v := range ufs.fields {
+			vCopy := make([]byte, len(v))
+			copy(vCopy, v)
+			fieldsCopy[k] = vCopy
+		}
+	}
+	return UnknownFieldSet{
+		fields: fieldsCopy,
+	}
+}
+
 // UnknownFieldHandler defines methods by which a value can store
 // unknown fields encountered during decoding.
 type UnknownFieldHandler interface {
@@ -377,6 +392,12 @@ func (ufsh *UnknownFieldSetHandler) CodecSetUnknownFields(other UnknownFieldSet)
 
 func (ufsh UnknownFieldSetHandler) CodecGetUnknownFields() UnknownFieldSet {
 	return ufsh.ufs
+}
+
+func (ufsh UnknownFieldSetHandler) DeepCopy() UnknownFieldSetHandler {
+	return UnknownFieldSetHandler{
+		ufs: ufsh.ufs.DeepCopy(),
+	}
 }
 
 // MapBySlice represents a slice which should be encoded as a map in the stream.
