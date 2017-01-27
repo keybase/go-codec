@@ -141,10 +141,6 @@ const (
 	// for common maps and slices, by by-passing reflection altogether.
 	fastpathEnabled = true
 
-	// if checkStructForEmptyValue, check structs fields to see if an empty value.
-	// This could be an expensive call, so possibly disable it.
-	checkStructForEmptyValue = false
-
 	// if derefForIsEmptyValue, deref pointers and interfaces when checking isEmptyValue
 	derefForIsEmptyValue = false
 
@@ -670,10 +666,15 @@ type structFieldInfo struct {
 
 	// only one of 'i' or 'is' can be set. If 'i' is -1, then 'is' has been set.
 
-	is        []int // (recursive/embedded) field index in struct
-	i         int16 // field index in struct
+	is []int // (recursive/embedded) field index in struct
+	i  int16 // field index in struct
+
 	omitEmpty bool
-	toArray   bool // if field is _struct, is the toArray set?
+	// Only has an effect when omitEmpty is true. Whether or not
+	// the empty check should recursively check structs.
+	omitEmptyCheckStruct bool
+
+	toArray bool // if field is _struct, is the toArray set?
 }
 
 // func (si *structFieldInfo) isZero() bool {
@@ -741,6 +742,8 @@ func parseStructFieldInfo(fname string, stag string) *structFieldInfo {
 			} else {
 				if s == "omitempty" {
 					si.omitEmpty = true
+				} else if s == "omitemptycheckstruct" {
+					si.omitEmptyCheckStruct = true
 				} else if s == "toarray" {
 					si.toArray = true
 				}
@@ -1065,6 +1068,9 @@ LOOP:
 		if siInfo != nil {
 			if siInfo.omitEmpty {
 				si.omitEmpty = true
+			}
+			if siInfo.omitEmptyCheckStruct {
+				si.omitEmptyCheckStruct = true
 			}
 		}
 		pv.sfis = append(pv.sfis, si)
