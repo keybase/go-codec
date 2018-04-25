@@ -627,9 +627,9 @@ func (e *Encoder) kStruct(f *codecFnInfo, rv reflect.Value) {
 
 	newlen = 0
 	var sf structField
-	recur := e.h.RecursiveEmptyCheck
 	sfn := structFieldNode{v: rvs, update: false}
 	for _, si := range tisfi {
+		recur := e.h.RecursiveEmptyCheck || si.recursiveEmptyCheck()
 		sf.known = true
 		// sv.fal = si.field(rvs, false)
 		sf.val = sfn.field(si)
