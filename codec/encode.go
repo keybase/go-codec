@@ -143,6 +143,12 @@ type EncodeOptions struct {
 	// when checking if a value is empty.
 	//
 	// Note that this may make OmitEmpty more expensive, as it incurs a lot more reflect calls.
+	//
+	// This is also available as the tag 'omitemptyrecursive', so
+	// that one can turn it on only for certain fields. This can
+	// be for performance reasons or control reasons; for example
+	// one might only want to recursively descend into pointers
+	// for some fields.
 	RecursiveEmptyCheck bool
 
 	// Raw controls whether we encode Raw values.
