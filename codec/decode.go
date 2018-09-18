@@ -2057,7 +2057,7 @@ func (d *Decoder) Decode(v interface{}) (err error) {
 // The default starting value of remainingDepth.
 //
 // TODO: Make this configurable.
-const defaultMaxDepth = 10000
+const defaultMaxDepth = 100
 
 // MustDecode is like Decode, but panics if unable to Decode.
 // This provides insight to the code location that triggered the error.
