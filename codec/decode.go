@@ -1869,6 +1869,7 @@ type Decoder struct {
 	nsp *sync.Pool
 	err error
 
+	decoding       bool
 	remainingDepth int
 
 	// ---- cpu cache line boundary?
@@ -2053,7 +2054,14 @@ func (d *Decoder) Decode(v interface{}) (err error) {
 // MustDecode is like Decode, but panics if unable to Decode.
 // This provides insight to the code location that triggered the error.
 func (d *Decoder) MustDecode(v interface{}) {
-	d.remainingDepth = 12345
+	if !d.decoding {
+		d.decoding = true
+		d.remainingDepth = 12345
+		defer func() {
+			d.decoding = false
+			d.remainingDepth = 0
+		}()
+	}
 
 	// TODO: Top-level: ensure that v is a pointer and not nil.
 	if d.err != nil {

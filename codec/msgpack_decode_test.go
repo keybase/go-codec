@@ -57,10 +57,7 @@ func (s *selfer) CodecEncodeSelf(e *Encoder) {
 }
 
 func (s *selfer) CodecDecodeSelf(d *Decoder) {
-	err := d.Decode(&s)
-	if err != nil {
-		panic(err)
-	}
+	d.MustDecode(&s)
 }
 
 func TestMsgpackDecodeSelfSelfer(t *testing.T) {
