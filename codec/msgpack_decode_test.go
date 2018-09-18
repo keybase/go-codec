@@ -28,8 +28,8 @@ func assertMaxDepthError(t *testing.T, err error) {
 	}
 }
 
-func TestMsgpackDecodeInfinitelyNestedSlice(t *testing.T) {
-	r := circularReader{b: []byte{0x91}}
+func testPattern(t *testing.T, b []byte) {
+	r := circularReader{b: b}
 
 	var h MsgpackHandle
 	d := NewDecoder(&r, &h)
@@ -39,37 +39,15 @@ func TestMsgpackDecodeInfinitelyNestedSlice(t *testing.T) {
 	assertMaxDepthError(t, err)
 }
 
-func TestMsgpackDecodeInfinitelyNestedMap(t *testing.T) {
-	r := circularReader{b: []byte{0x81}}
-
-	var h MsgpackHandle
-	d := NewDecoder(&r, &h)
-
-	var v interface{}
-	err := d.Decode(&v)
-	assertMaxDepthError(t, err)
-}
-
-func TestMsgpackDecodeInfinitelyNestedSliceMap(t *testing.T) {
-	r := circularReader{b: []byte{0x91, 0x81}}
-
-	var h MsgpackHandle
-	d := NewDecoder(&r, &h)
-
-	var v interface{}
-	err := d.Decode(&v)
-	assertMaxDepthError(t, err)
-}
-
-func TestMsgpackDecodeInfinitelyNestedSliceNumberMapNumber(t *testing.T) {
-	r := circularReader{b: []byte{0x92, 0x3f, 0x81, 0x4e}}
-
-	var h MsgpackHandle
-	d := NewDecoder(&r, &h)
-
-	var v interface{}
-	err := d.Decode(&v)
-	assertMaxDepthError(t, err)
+func TestMsgpackDecodeInfiniteDepth(t *testing.T) {
+	// [[[...
+	testPattern(t, []byte{0x91})
+	// {{{...
+	testPattern(t, []byte{0x81})
+	// [{[{...
+	testPattern(t, []byte{0x91, 0x81})
+	// [0x3f, {0x3f: [0x3f, {...
+	testPattern(t, []byte{0x92, 0x3f, 0x81, 0x4e})
 }
 
 type selfer struct{}
@@ -82,6 +60,7 @@ func (s *selfer) CodecDecodeSelf(d *Decoder) {
 	d.MustDecode(&s)
 }
 
+// Make sure we're robust against reentrant calls.
 func TestMsgpackDecodeSelfSelfer(t *testing.T) {
 	var h MsgpackHandle
 	d := NewDecoderBytes([]byte{0x00}, &h)
