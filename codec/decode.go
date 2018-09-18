@@ -1869,7 +1869,10 @@ type Decoder struct {
 	nsp *sync.Pool
 	err error
 
-	decoding       bool
+	// Whether we're in a Decode or MustDecode call.
+	decoding bool
+	// The remaining number of nested decode() calls before giving
+	// up.
 	remainingDepth int
 
 	// ---- cpu cache line boundary?
@@ -2051,11 +2054,17 @@ func (d *Decoder) Decode(v interface{}) (err error) {
 	return
 }
 
+// The default starting value of remainingDepth.
+//
+// TODO: Make this configurable.
 const defaultMaxDepth = 10000
 
 // MustDecode is like Decode, but panics if unable to Decode.
 // This provides insight to the code location that triggered the error.
 func (d *Decoder) MustDecode(v interface{}) {
+	// If we're in a top-level MustDecode call, set remainingDepth
+	// (checked by decode() below). Without this, we run the risk
+	// of overflowing the stack, which is a fatal error.
 	if !d.decoding {
 		d.decoding = true
 		d.remainingDepth = defaultMaxDepth
