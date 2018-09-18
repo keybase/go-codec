@@ -4,6 +4,7 @@
 package codec
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -29,7 +30,7 @@ func TestMsgpackDecodeInfinitelyNestedArray(t *testing.T) {
 
 	var v interface{}
 	err := d.Decode(&v)
-	if err != nil {
-		t.Fatal(err)
+	if err == nil || !strings.HasSuffix(err.Error(), "max depth exceeded") {
+		t.Fatalf("Expected 'max depth exceeded', got %v", err)
 	}
 }
