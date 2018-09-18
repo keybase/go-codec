@@ -1869,6 +1869,8 @@ type Decoder struct {
 	nsp *sync.Pool
 	err error
 
+	remainingDepth int
+
 	// ---- cpu cache line boundary?
 	b  [decScratchByteArrayLen]byte // scratch buffer, used by Decoder and xxxEncDrivers
 	is map[string]string            // used for interning strings
@@ -2051,6 +2053,8 @@ func (d *Decoder) Decode(v interface{}) (err error) {
 // MustDecode is like Decode, but panics if unable to Decode.
 // This provides insight to the code location that triggered the error.
 func (d *Decoder) MustDecode(v interface{}) {
+	d.remainingDepth = 12345
+
 	// TODO: Top-level: ensure that v is a pointer and not nil.
 	if d.err != nil {
 		panic(d.err)
@@ -2202,6 +2206,11 @@ func setZero(iv interface{}) {
 }
 
 func (d *Decoder) decode(iv interface{}) {
+	d.remainingDepth--
+	if d.remainingDepth < 0 {
+		panic("max depth exceeded")
+	}
+
 	// check nil and interfaces explicitly,
 	// so that type switches just have a run of constant non-interface types.
 	if iv == nil {
