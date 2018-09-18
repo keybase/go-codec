@@ -22,6 +22,12 @@ func (r *circularReader) Read(p []byte) (int, error) {
 	return len(p), nil
 }
 
+func assertMaxDepthError(t *testing.T, err error) {
+	if err == nil || !strings.HasSuffix(err.Error(), "max depth exceeded") {
+		t.Fatalf("Expected 'max depth exceeded', got %v", err)
+	}
+}
+
 func TestMsgpackDecodeInfinitelyNestedArray(t *testing.T) {
 	r := circularReader{b: []byte{0x91}}
 
@@ -30,9 +36,7 @@ func TestMsgpackDecodeInfinitelyNestedArray(t *testing.T) {
 
 	var v interface{}
 	err := d.Decode(&v)
-	if err == nil || !strings.HasSuffix(err.Error(), "max depth exceeded") {
-		t.Fatalf("Expected 'max depth exceeded', got %v", err)
-	}
+	assertMaxDepthError(t, err)
 }
 
 func TestMsgpackDecodeInfinitelyNestedMap(t *testing.T) {
@@ -43,7 +47,27 @@ func TestMsgpackDecodeInfinitelyNestedMap(t *testing.T) {
 
 	var v interface{}
 	err := d.Decode(&v)
-	if err == nil || !strings.HasSuffix(err.Error(), "max depth exceeded") {
-		t.Fatalf("Expected 'max depth exceeded', got %v", err)
+	assertMaxDepthError(t, err)
+}
+
+type selfer struct{}
+
+func (s *selfer) CodecEncodeSelf(e *Encoder) {
+	panic("CodecEncodeSelf unexpectedly called")
+}
+
+func (s *selfer) CodecDecodeSelf(d *Decoder) {
+	err := d.Decode(&s)
+	if err != nil {
+		panic(err)
 	}
+}
+
+func TestMsgpackDecodeSelfSelfer(t *testing.T) {
+	var h MsgpackHandle
+	d := NewDecoderBytes([]byte{0x00}, &h)
+
+	var s selfer
+	err := d.Decode(&s)
+	assertMaxDepthError(t, err)
 }
