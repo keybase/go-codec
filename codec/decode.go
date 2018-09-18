@@ -2051,12 +2051,14 @@ func (d *Decoder) Decode(v interface{}) (err error) {
 	return
 }
 
+const defaultMaxDepth = 10000
+
 // MustDecode is like Decode, but panics if unable to Decode.
 // This provides insight to the code location that triggered the error.
 func (d *Decoder) MustDecode(v interface{}) {
 	if !d.decoding {
 		d.decoding = true
-		d.remainingDepth = 12345
+		d.remainingDepth = defaultMaxDepth
 		defer func() {
 			d.decoding = false
 			d.remainingDepth = 0
