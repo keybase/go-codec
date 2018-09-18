@@ -28,7 +28,7 @@ func assertMaxDepthError(t *testing.T, err error) {
 	}
 }
 
-func TestMsgpackDecodeInfinitelyNestedArray(t *testing.T) {
+func TestMsgpackDecodeInfinitelyNestedSlice(t *testing.T) {
 	r := circularReader{b: []byte{0x91}}
 
 	var h MsgpackHandle
@@ -41,6 +41,17 @@ func TestMsgpackDecodeInfinitelyNestedArray(t *testing.T) {
 
 func TestMsgpackDecodeInfinitelyNestedMap(t *testing.T) {
 	r := circularReader{b: []byte{0x81}}
+
+	var h MsgpackHandle
+	d := NewDecoder(&r, &h)
+
+	var v interface{}
+	err := d.Decode(&v)
+	assertMaxDepthError(t, err)
+}
+
+func TestMsgpackDecodeInfinitelyNestedSliceMap(t *testing.T) {
+	r := circularReader{b: []byte{0x91, 0x81}}
 
 	var h MsgpackHandle
 	d := NewDecoder(&r, &h)
