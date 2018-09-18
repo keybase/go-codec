@@ -61,6 +61,17 @@ func TestMsgpackDecodeInfinitelyNestedSliceMap(t *testing.T) {
 	assertMaxDepthError(t, err)
 }
 
+func TestMsgpackDecodeInfinitelyNestedSliceNumberMapNumber(t *testing.T) {
+	r := circularReader{b: []byte{0x92, 0x3f, 0x81, 0x4e}}
+
+	var h MsgpackHandle
+	d := NewDecoder(&r, &h)
+
+	var v interface{}
+	err := d.Decode(&v)
+	assertMaxDepthError(t, err)
+}
+
 type selfer struct{}
 
 func (s *selfer) CodecEncodeSelf(e *Encoder) {
