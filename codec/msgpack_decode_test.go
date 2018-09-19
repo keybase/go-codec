@@ -108,12 +108,12 @@ func testMsgpackDecodeMapSizeMismatch(t *testing.T, v interface{}) {
 	assertEOF(t, err)
 }
 
-func TestMsgpackDecodeMapSizeMismatchFastPath(t *testing.T) {
-	var v interface{}
-	testMsgpackDecodeMapSizeMismatch(t, &v)
+func TestMsgpackDecodeMapSizeMismatchFastPathNil(t *testing.T) {
+	var m map[int]string
+	testMsgpackDecodeMapSizeMismatch(t, &m)
 }
 
-func TestMsgpackDecodeMapSizeMismatchSlowPath(t *testing.T) {
+func TestMsgpackDecodeMapSizeMismatchSlowPathNil(t *testing.T) {
 	var m map[int][]byte
 	testMsgpackDecodeMapSizeMismatch(t, &m)
 }
