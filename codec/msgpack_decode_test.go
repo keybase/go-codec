@@ -137,7 +137,7 @@ func TestMsgpackDecodeSliceSizeMismatchSlowPathNil(t *testing.T) {
 	var h MsgpackHandle
 	d := NewDecoderBytes(b, &h)
 
-	var a [][]byte
+	var a [][100]byte
 	err := d.Decode(&a)
 	assertEOF(t, err)
 }
