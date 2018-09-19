@@ -117,3 +117,27 @@ func TestMsgpackDecodeMapSizeMismatchSlowPathNil(t *testing.T) {
 	var m map[int][]byte
 	testMsgpackDecodeMapSizeMismatch(t, &m)
 }
+
+func TestMsgpackDecodeSliceSizeMismatchFastPathNil(t *testing.T) {
+	// An array claiming to have 0x10eeeeee elements, but only has 1.
+	b := []byte{0xdd, 0x10, 0xee, 0xee, 0xee, 0x1}
+
+	var h MsgpackHandle
+	d := NewDecoderBytes(b, &h)
+
+	var a []byte
+	err := d.Decode(&a)
+	assertEOF(t, err)
+}
+
+func TestMsgpackDecodeSliceSizeMismatchSlowPathNil(t *testing.T) {
+	// An array claiming to have 0x10eeeeee elements, but only has 1.
+	b := []byte{0xdd, 0x10, 0xee, 0xee, 0xee, 0x91, 0x1}
+
+	var h MsgpackHandle
+	d := NewDecoderBytes(b, &h)
+
+	var a [][]byte
+	err := d.Decode(&a)
+	assertEOF(t, err)
+}
