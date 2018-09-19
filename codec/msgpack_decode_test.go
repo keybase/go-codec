@@ -91,16 +91,29 @@ func TestMsgpackDecodeMaxDepthOption(t *testing.T) {
 	assertMaxDepthError(t, err)
 }
 
-func TestMsgpackDecodeMapSizeMismatch(t *testing.T) {
+func assertEOF(t *testing.T, err error) {
+	if err != io.EOF && err != io.ErrUnexpectedEOF {
+		t.Fatalf("expected EOF or ErrUnexpectedEOF, got %v", err)
+	}
+}
+
+func testMsgpackDecodeMapSizeMismatch(t *testing.T, v interface{}) {
 	// A map claiming to have 0x10eeeeee KV pairs, but only has 1.
-	b := []byte{0xdf, 0x10, 0xee, 0xee, 0xee, 0x1, 0x1}
+	b := []byte{0xdf, 0x10, 0xee, 0xee, 0xee, 0x1, 0xa1, 0x1}
 
 	var h MsgpackHandle
 	d := NewDecoderBytes(b, &h)
 
-	var v map[string][]byte
 	err := d.Decode(&v)
-	if err != io.EOF && err != io.ErrUnexpectedEOF {
-		t.Fatalf("expected EOF or ErrUnexpectedEOF, got %v", err)
-	}
+	assertEOF(t, err)
+}
+
+func TestMsgpackDecodeMapSizeMismatchUntyped(t *testing.T) {
+	var v interface{}
+	testMsgpackDecodeMapSizeMismatch(t, &v)
+}
+
+func TestMsgpackDecodeMapSizeMismatchTypedKey(t *testing.T) {
+	var m map[string][]byte
+	testMsgpackDecodeMapSizeMismatch(t, &m)
 }
