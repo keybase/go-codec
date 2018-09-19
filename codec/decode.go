@@ -161,6 +161,10 @@ type DecodeOptions struct {
 	// Instead, we provision up to MaxInitLen, fill that up, and start appending after that.
 	MaxInitLen int
 
+	// MaxDepth defines the maximum depth when decoding nested
+	// maps and slices. If 0 or negative, we default to 100.
+	MaxDepth int
+
 	// ReaderBufferSize is the size of the buffer used when reading.
 	//
 	// if > 0, we use a smart buffer internally for performance purposes.
@@ -1843,7 +1847,8 @@ type decReaderSwitch struct {
 // 	return z.ri.readUntil(in, stop)
 // }
 
-// A Decoder reads and decodes an object from an input stream in the codec format.
+// A Decoder reads and decodes an object from an input stream in the
+// codec format. Decoder is not goroutine-safe.
 type Decoder struct {
 	panicHdl
 	// hopefully, reduce derefencing cost by laying the decReader inside the Decoder.
@@ -1868,6 +1873,12 @@ type Decoder struct {
 	n   *decNaked
 	nsp *sync.Pool
 	err error
+
+	// Whether we're in a Decode or MustDecode call.
+	decoding bool
+	// The remaining number of nested decode() calls before giving
+	// up.
+	remainingDepth int
 
 	// ---- cpu cache line boundary?
 	b  [decScratchByteArrayLen]byte // scratch buffer, used by Decoder and xxxEncDrivers
@@ -2048,9 +2059,29 @@ func (d *Decoder) Decode(v interface{}) (err error) {
 	return
 }
 
+// The default starting value of remainingDepth.
+//
+// TODO: Make this configurable.
+const defaultMaxDepth = 100
+
 // MustDecode is like Decode, but panics if unable to Decode.
 // This provides insight to the code location that triggered the error.
 func (d *Decoder) MustDecode(v interface{}) {
+	// If we're in a top-level MustDecode call, set remainingDepth
+	// (checked by decode() below). Without this, we run the risk
+	// of overflowing the stack, which is a fatal error.
+	if !d.decoding {
+		d.decoding = true
+		d.remainingDepth = d.h.MaxDepth
+		if d.remainingDepth <= 0 {
+			d.remainingDepth = defaultMaxDepth
+		}
+		defer func() {
+			d.decoding = false
+			d.remainingDepth = 0
+		}()
+	}
+
 	// TODO: Top-level: ensure that v is a pointer and not nil.
 	if d.err != nil {
 		panic(d.err)
@@ -2202,6 +2233,14 @@ func setZero(iv interface{}) {
 }
 
 func (d *Decoder) decode(iv interface{}) {
+	d.remainingDepth--
+	if d.remainingDepth < 0 {
+		panic("max depth exceeded")
+	}
+	defer func() {
+		d.remainingDepth++
+	}()
+
 	// check nil and interfaces explicitly,
 	// so that type switches just have a run of constant non-interface types.
 	if iv == nil {
