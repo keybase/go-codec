@@ -161,6 +161,10 @@ type DecodeOptions struct {
 	// Instead, we provision up to MaxInitLen, fill that up, and start appending after that.
 	MaxInitLen int
 
+	// MaxDepth defines the maximum depth when decoding nested
+	// maps and slices. If 0 or negative, we default to 100.
+	MaxDepth int
+
 	// ReaderBufferSize is the size of the buffer used when reading.
 	//
 	// if > 0, we use a smart buffer internally for performance purposes.
@@ -2067,7 +2071,10 @@ func (d *Decoder) MustDecode(v interface{}) {
 	// of overflowing the stack, which is a fatal error.
 	if !d.decoding {
 		d.decoding = true
-		d.remainingDepth = defaultMaxDepth
+		d.remainingDepth = d.h.MaxDepth
+		if d.remainingDepth <= 0 {
+			d.remainingDepth = defaultMaxDepth
+		}
 		defer func() {
 			d.decoding = false
 			d.remainingDepth = 0
