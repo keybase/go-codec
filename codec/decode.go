@@ -1847,7 +1847,8 @@ type decReaderSwitch struct {
 // 	return z.ri.readUntil(in, stop)
 // }
 
-// A Decoder reads and decodes an object from an input stream in the codec format.
+// A Decoder reads and decodes an object from an input stream in the
+// codec format. Decoder is not goroutine-safe.
 type Decoder struct {
 	panicHdl
 	// hopefully, reduce derefencing cost by laying the decReader inside the Decoder.
