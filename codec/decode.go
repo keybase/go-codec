@@ -2229,6 +2229,9 @@ func (d *Decoder) decode(iv interface{}) {
 	if d.remainingDepth < 0 {
 		panic("max depth exceeded")
 	}
+	defer func() {
+		d.remainingDepth++
+	}()
 
 	// check nil and interfaces explicitly,
 	// so that type switches just have a run of constant non-interface types.
