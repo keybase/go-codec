@@ -69,3 +69,23 @@ func TestMsgpackDecodeSelfSelfer(t *testing.T) {
 	err := d.Decode(&s)
 	assertMaxDepthError(t, err)
 }
+
+func TestMsgpackDecodeMaxDepthOption(t *testing.T) {
+	// [[0x01]]
+	b := []byte{0x91, 0x91, 0x01}
+
+	var h MsgpackHandle
+	d := NewDecoderBytes(b, &h)
+
+	var v interface{}
+	err := d.Decode(&v)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	h.MaxDepth = 1
+	d = NewDecoderBytes(b, &h)
+
+	err = d.Decode(&v)
+	assertMaxDepthError(t, err)
+}
