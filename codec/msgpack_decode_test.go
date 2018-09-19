@@ -4,6 +4,7 @@
 package codec
 
 import (
+	"io"
 	"strings"
 	"testing"
 )
@@ -88,4 +89,18 @@ func TestMsgpackDecodeMaxDepthOption(t *testing.T) {
 
 	err = d.Decode(&v)
 	assertMaxDepthError(t, err)
+}
+
+func TestMsgpackDecodeMapSizeMismatch(t *testing.T) {
+	// A map claiming to have 0x10eeeeee KV pairs, but only has 1.
+	b := []byte{0xdf, 0x10, 0xee, 0xee, 0xee, 0x1, 0x1}
+
+	var h MsgpackHandle
+	d := NewDecoderBytes(b, &h)
+
+	var v map[string][]byte
+	err := d.Decode(&v)
+	if err != io.EOF && err != io.ErrUnexpectedEOF {
+		t.Fatalf("expected EOF or ErrUnexpectedEOF, got %v", err)
+	}
 }
