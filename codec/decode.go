@@ -1513,8 +1513,12 @@ func (d *Decoder) kMap(f *codecFnInfo, rv reflect.Value) {
 	containerLen := dd.ReadMapStart()
 	elemsep := d.esep
 	ti := f.ti
+
+	ktype, vtype := ti.key, ti.elem
+
 	if rv.IsNil() {
-		rv.Set(makeMapReflect(ti.rt, containerLen))
+		rvlen := decInferLen(containerLen, d.h.MaxInitLen, int(ktype.Size()+vtype.Size()))
+		rv.Set(makeMapReflect(ti.rt, rvlen))
 	}
 
 	if containerLen == 0 {
@@ -1522,7 +1526,6 @@ func (d *Decoder) kMap(f *codecFnInfo, rv reflect.Value) {
 		return
 	}
 
-	ktype, vtype := ti.key, ti.elem
 	ktypeId := rt2id(ktype)
 	vtypeKind := vtype.Kind()
 
