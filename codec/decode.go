@@ -267,6 +267,8 @@ func safeReadx(r decReader, clen, maxInitLen int) []byte {
 }
 
 type bufioDecReader struct {
+	maxInitLen int
+
 	buf []byte
 	r   io.Reader
 
@@ -399,11 +401,7 @@ func (z *bufioDecReader) readx(n int) (bs []byte) {
 		}
 		return
 	}
-	bs = make([]byte, n)
-	_, err := z.Read(bs)
-	if err != nil {
-		panic(err)
-	}
+	bs = safeReadx(z, n, z.maxInitLen)
 	return
 }
 
@@ -1970,6 +1968,7 @@ func (d *Decoder) Reset(r io.Reader) {
 	}
 	if d.bi == nil {
 		d.bi = new(bufioDecReader)
+		d.bi.maxInitLen = d.h.MaxInitLen
 	}
 	d.bytes = false
 	if d.h.ReaderBufferSize > 0 {
