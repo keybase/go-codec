@@ -4,6 +4,7 @@
 package codec
 
 import (
+	"io"
 	"strings"
 	"testing"
 )
@@ -88,4 +89,55 @@ func TestMsgpackDecodeMaxDepthOption(t *testing.T) {
 
 	err = d.Decode(&v)
 	assertMaxDepthError(t, err)
+}
+
+func assertEOF(t *testing.T, err error) {
+	if err != io.EOF && err != io.ErrUnexpectedEOF {
+		t.Fatalf("expected EOF or ErrUnexpectedEOF, got %v", err)
+	}
+}
+
+func testMsgpackDecodeMapSizeMismatch(t *testing.T, v interface{}) {
+	// A map claiming to have 0x10eeeeee KV pairs, but only has 1.
+	b := []byte{0xdf, 0x10, 0xee, 0xee, 0xee, 0x1, 0xa1, 0x1}
+
+	var h MsgpackHandle
+	d := NewDecoderBytes(b, &h)
+
+	err := d.Decode(&v)
+	assertEOF(t, err)
+}
+
+func TestMsgpackDecodeMapSizeMismatchFastPathNil(t *testing.T) {
+	var m map[int]string
+	testMsgpackDecodeMapSizeMismatch(t, &m)
+}
+
+func TestMsgpackDecodeMapSizeMismatchSlowPathNil(t *testing.T) {
+	var m map[int][]byte
+	testMsgpackDecodeMapSizeMismatch(t, &m)
+}
+
+func TestMsgpackDecodeSliceSizeMismatchFastPathNil(t *testing.T) {
+	// An array claiming to have 0x10eeeeee elements, but only has 1.
+	b := []byte{0xdd, 0x10, 0xee, 0xee, 0xee, 0x1}
+
+	var h MsgpackHandle
+	d := NewDecoderBytes(b, &h)
+
+	var a []byte
+	err := d.Decode(&a)
+	assertEOF(t, err)
+}
+
+func TestMsgpackDecodeSliceSizeMismatchSlowPathNil(t *testing.T) {
+	// An array claiming to have 0x10eeeeee elements, but only has 1.
+	b := []byte{0xdd, 0x10, 0xee, 0xee, 0xee, 0x91, 0x1}
+
+	var h MsgpackHandle
+	d := NewDecoderBytes(b, &h)
+
+	var a [][100]byte
+	err := d.Decode(&a)
+	assertEOF(t, err)
 }
