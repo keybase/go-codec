@@ -251,6 +251,21 @@ type DecodeOptions struct {
 
 // ------------------------------------
 
+func safeReadx(r decReader, clen, maxInitLen int) []byte {
+	len := decInferLen(clen, maxInitLen, 1)
+	bsOut := make([]byte, len)
+	r.readb(bsOut)
+	for len < clen {
+		dlen := decInferLen(clen-len, maxInitLen, 1)
+		bs2 := bsOut
+		bsOut = make([]byte, len+dlen)
+		copy(bsOut, bs2)
+		r.readb(bsOut[len:])
+		len += dlen
+	}
+	return bsOut
+}
+
 type bufioDecReader struct {
 	buf []byte
 	r   io.Reader
@@ -2519,18 +2534,7 @@ func decByteSlice(r decReader, clen, maxInitLen int, bs []byte) (bsOut []byte) {
 		bsOut = bs[:clen]
 		r.readb(bsOut)
 	} else {
-		// bsOut = make([]byte, clen)
-		len2 := decInferLen(clen, maxInitLen, 1)
-		bsOut = make([]byte, len2)
-		r.readb(bsOut)
-		for len2 < clen {
-			len3 := decInferLen(clen-len2, maxInitLen, 1)
-			bs3 := bsOut
-			bsOut = make([]byte, len2+len3)
-			copy(bsOut, bs3)
-			r.readb(bsOut[len2:])
-			len2 += len3
-		}
+		bsOut = safeReadx(r, clen, maxInitLen)
 	}
 	return
 }
