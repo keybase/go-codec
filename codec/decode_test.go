@@ -53,3 +53,19 @@ func TestIODecReaderReadx(t *testing.T) {
 		testIODecReaderReadx(t, n)
 	}
 }
+
+func testBytesDecReaderReadx(t *testing.T, n int) {
+	var r bytesDecReader
+	r.reset(nil)
+	i := doReadx(&r, n)
+	if i != io.EOF {
+		t.Fatalf("(n=%d) expected EOF, got %v", n, i)
+	}
+}
+
+func TestBytesDecReaderReadx(t *testing.T) {
+	for n := 1; n > 0; n <<= 1 {
+		t.Logf("n=%d", n)
+		testBytesDecReaderReadx(t, n)
+	}
+}
