@@ -48,7 +48,7 @@ func testIODecReaderReadx(t *testing.T, n int) {
 }
 
 func TestIODecReaderReadx(t *testing.T) {
-	for n := 1; n < (1 << 10); n <<= 1 {
+	for n := 1; n < (1 << 50); n <<= 1 {
 		t.Logf("n=%d", n)
 		testIODecReaderReadx(t, n)
 	}

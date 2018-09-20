@@ -569,6 +569,8 @@ func (z *bufioDecReader) stopTrack() (bs []byte) {
 //
 // It also has a fallback implementation of ByteScanner if needed.
 type ioDecReader struct {
+	maxInitLen int
+
 	r io.Reader // the reader passed in
 
 	rr io.Reader
@@ -661,18 +663,12 @@ func (z *ioDecReader) readx(n int) (bs []byte) {
 	if n <= 0 {
 		return
 	}
-	if n < len(z.x) {
+	if n <= len(z.x) {
 		bs = z.x[:n]
-	} else {
-		bs = make([]byte, n)
+		z.readb(bs)
+		return
 	}
-	if _, err := decReadFull(z.rr, bs); err != nil {
-		panic(err)
-	}
-	z.n += len(bs)
-	if z.trb {
-		z.tr = append(z.tr, bs...)
-	}
+	bs = safeReadx(z, n, z.maxInitLen)
 	return
 }
 
@@ -1980,6 +1976,7 @@ func (d *Decoder) Reset(r io.Reader) {
 		// d.s = d.sa[:0]
 		if d.ri == nil {
 			d.ri = new(ioDecReader)
+			d.ri.maxInitLen = d.h.MaxInitLen
 		}
 		d.ri.reset(r)
 		d.r = d.ri
