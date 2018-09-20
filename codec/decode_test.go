@@ -5,14 +5,28 @@ package codec
 
 import (
 	"bytes"
+	"io"
 	"testing"
 )
 
-const maxInt = int(^uint(0) >> 1)
+func doReadx(r decReader, n int) (i interface{}) {
+	defer func() {
+		if x := recover(); x != nil {
+			i = x
+			return
+		}
+	}()
+
+	r.readx(n)
+	return nil
+}
 
 func TestBufioDecReaderReadx(t *testing.T) {
 	var r bufioDecReader
 	r.buf = make([]byte, 0, 10)
 	r.reset(bytes.NewReader(nil))
-	r.readx(maxInt >> 24)
+	i := doReadx(&r, 100)
+	if i != io.EOF {
+		t.Fatalf("expected EOF, got %v", i)
+	}
 }
