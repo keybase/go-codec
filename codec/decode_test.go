@@ -32,7 +32,7 @@ func testBufioDecReaderReadx(t *testing.T, n int) {
 }
 
 func TestBufioDecReaderReadx(t *testing.T) {
-	for n := 1; n < (1 << 10); n <<= 1 {
+	for n := 1; n > 0; n <<= 1 {
 		t.Logf("n=%d", n)
 		testBufioDecReaderReadx(t, n)
 	}
