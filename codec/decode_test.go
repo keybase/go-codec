@@ -21,12 +21,18 @@ func doReadx(r decReader, n int) (i interface{}) {
 	return nil
 }
 
-func TestBufioDecReaderReadx(t *testing.T) {
+func testBufioDecReaderReadx(t *testing.T, k uint) {
 	var r bufioDecReader
 	r.buf = make([]byte, 0, 10)
 	r.reset(bytes.NewReader(nil))
-	i := doReadx(&r, 100)
+	i := doReadx(&r, 1<<k)
 	if i != io.EOF {
-		t.Fatalf("expected EOF, got %v", i)
+		t.Fatalf("(2<<%d) expected EOF, got %v", k, i)
+	}
+}
+
+func TestBufioDecReaderReadx(t *testing.T) {
+	for k := uint(0); k < 31; k++ {
+		testBufioDecReaderReadx(t, k)
 	}
 }
