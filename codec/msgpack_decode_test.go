@@ -4,6 +4,7 @@
 package codec
 
 import (
+	"bytes"
 	"io"
 	"strings"
 	"testing"
@@ -138,6 +139,18 @@ func TestMsgpackDecodeSliceSizeMismatchSlowPathNil(t *testing.T) {
 	d := NewDecoderBytes(b, &h)
 
 	var a [][100]byte
+	err := d.Decode(&a)
+	assertEOF(t, err)
+}
+
+func TestMsgpackDecodeExtSizeMismatchBufferedNil(t *testing.T) {
+	// An extension claiming to have 0x7fffffff bytes, but only has 1.
+	b := []byte{0xc9, 0x7f, 0xff, 0xff, 0xff, 0xda, 0x1}
+
+	var h MsgpackHandle
+	d := NewDecoder(bytes.NewBuffer(b), &h)
+
+	var a interface{}
 	err := d.Decode(&a)
 	assertEOF(t, err)
 }
