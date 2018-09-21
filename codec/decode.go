@@ -251,7 +251,24 @@ type DecodeOptions struct {
 
 // ------------------------------------
 
+func safeReadx(r decReader, clen, maxInitLen int) []byte {
+	len := decInferLen(clen, maxInitLen, 1)
+	bsOut := make([]byte, len)
+	r.readb(bsOut)
+	for len < clen {
+		dlen := decInferLen(clen-len, maxInitLen, 1)
+		bs2 := bsOut
+		bsOut = make([]byte, len+dlen)
+		copy(bsOut, bs2)
+		r.readb(bsOut[len:])
+		len += dlen
+	}
+	return bsOut
+}
+
 type bufioDecReader struct {
+	maxInitLen int
+
 	buf []byte
 	r   io.Reader
 
@@ -384,11 +401,7 @@ func (z *bufioDecReader) readx(n int) (bs []byte) {
 		}
 		return
 	}
-	bs = make([]byte, n)
-	_, err := z.Read(bs)
-	if err != nil {
-		panic(err)
-	}
+	bs = safeReadx(z, n, z.maxInitLen)
 	return
 }
 
@@ -556,6 +569,8 @@ func (z *bufioDecReader) stopTrack() (bs []byte) {
 //
 // It also has a fallback implementation of ByteScanner if needed.
 type ioDecReader struct {
+	maxInitLen int
+
 	r io.Reader // the reader passed in
 
 	rr io.Reader
@@ -648,18 +663,12 @@ func (z *ioDecReader) readx(n int) (bs []byte) {
 	if n <= 0 {
 		return
 	}
-	if n < len(z.x) {
+	if n <= len(z.x) {
 		bs = z.x[:n]
-	} else {
-		bs = make([]byte, n)
+		z.readb(bs)
+		return
 	}
-	if _, err := decReadFull(z.rr, bs); err != nil {
-		panic(err)
-	}
-	z.n += len(bs)
-	if z.trb {
-		z.tr = append(z.tr, bs...)
-	}
+	bs = safeReadx(z, n, z.maxInitLen)
 	return
 }
 
@@ -1955,6 +1964,7 @@ func (d *Decoder) Reset(r io.Reader) {
 	}
 	if d.bi == nil {
 		d.bi = new(bufioDecReader)
+		d.bi.maxInitLen = d.h.MaxInitLen
 	}
 	d.bytes = false
 	if d.h.ReaderBufferSize > 0 {
@@ -1966,6 +1976,7 @@ func (d *Decoder) Reset(r io.Reader) {
 		// d.s = d.sa[:0]
 		if d.ri == nil {
 			d.ri = new(ioDecReader)
+			d.ri.maxInitLen = d.h.MaxInitLen
 		}
 		d.ri.reset(r)
 		d.r = d.ri
@@ -2519,18 +2530,7 @@ func decByteSlice(r decReader, clen, maxInitLen int, bs []byte) (bsOut []byte) {
 		bsOut = bs[:clen]
 		r.readb(bsOut)
 	} else {
-		// bsOut = make([]byte, clen)
-		len2 := decInferLen(clen, maxInitLen, 1)
-		bsOut = make([]byte, len2)
-		r.readb(bsOut)
-		for len2 < clen {
-			len3 := decInferLen(clen-len2, maxInitLen, 1)
-			bs3 := bsOut
-			bsOut = make([]byte, len2+len3)
-			copy(bsOut, bs3)
-			r.readb(bsOut[len2:])
-			len2 += len3
-		}
+		bsOut = safeReadx(r, clen, maxInitLen)
 	}
 	return
 }
