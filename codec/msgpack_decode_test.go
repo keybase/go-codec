@@ -51,12 +51,12 @@ func testMsgpackDecodeInfiniteDepth(t *testing.T, out interface{}) {
 	testPattern(t, []byte{0x92, 0x3f, 0x81, 0x4e}, out)
 }
 
-func TestMsgpackDecodeInterfaceInfiniteDepth(t *testing.T) {
+func TestMsgpackDecodeInfiniteDepth(t *testing.T) {
 	var v interface{}
 	testMsgpackDecodeInfiniteDepth(t, &v)
 }
 
-func TestMsgpackDecodeArrayInfiniteDepth(t *testing.T) {
+func TestMsgpackSwallowInfiniteDepth(t *testing.T) {
 	// Exercise swallow path.
 	var v [0]interface{}
 	testMsgpackDecodeInfiniteDepth(t, &v)
