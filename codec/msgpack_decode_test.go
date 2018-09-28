@@ -30,26 +30,36 @@ func assertMaxDepthError(t *testing.T, err error) {
 	}
 }
 
-func testPattern(t *testing.T, b []byte) {
+func testPattern(t *testing.T, b []byte, out interface{}) {
 	r := circularReader{b: b}
 
 	var h MsgpackHandle
 	d := NewDecoder(&r, &h)
 
-	var v interface{}
-	err := d.Decode(&v)
+	err := d.Decode(out)
 	assertMaxDepthError(t, err)
 }
 
-func TestMsgpackDecodeInfiniteDepth(t *testing.T) {
+func testMsgpackDecodeInfiniteDepth(t *testing.T, out interface{}) {
 	// [[[...
-	testPattern(t, []byte{0x91})
+	testPattern(t, []byte{0x91}, out)
 	// {{{...
-	testPattern(t, []byte{0x81})
+	testPattern(t, []byte{0x81}, out)
 	// [{[{...
-	testPattern(t, []byte{0x91, 0x81})
+	testPattern(t, []byte{0x91, 0x81}, out)
 	// [0x3f, {0x3f: [0x3f, {...
-	testPattern(t, []byte{0x92, 0x3f, 0x81, 0x4e})
+	testPattern(t, []byte{0x92, 0x3f, 0x81, 0x4e}, out)
+}
+
+func TestMsgpackDecodeInterfaceInfiniteDepth(t *testing.T) {
+	var v interface{}
+	testMsgpackDecodeInfiniteDepth(t, &v)
+}
+
+func TestMsgpackDecodeArrayInfiniteDepth(t *testing.T) {
+	// Exercise swallow path.
+	var v [0]interface{}
+	testMsgpackDecodeInfiniteDepth(t, &v)
 }
 
 type selfer struct{}
